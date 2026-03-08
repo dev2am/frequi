@@ -1,12 +1,13 @@
 ---
 services:
   frequi:
-    # Uncomment the following lines to build the image locally
-    # build:
-    #   context: .
-    #   dockerfile: "./Dockerfile"
-    # image: frequi
-    image: freqtradeorg/frequi:latest
+    build:
+      context: .
+      dockerfile: "./Dockerfile"
+      args:
+        VITE_CF_ACCESS_CLIENT_ID: ${VITE_CF_ACCESS_CLIENT_ID:-}
+        VITE_CF_ACCESS_CLIENT_SECRET: ${VITE_CF_ACCESS_CLIENT_SECRET:-}
+    image: frequi-local
     restart: unless-stopped
     ports:
       - "3000:80"

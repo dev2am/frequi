@@ -14,10 +14,18 @@ export function useApi(userService: UserServiceType, botId: string) {
     (request) => {
       const token = userService.accessToken.value;
       try {
+        request.headers = request.headers as AxiosHeaders;
         if (token) {
-          request.headers = request.headers as AxiosHeaders;
           // Append token to each request
           request.headers.set('Authorization', `Bearer ${token}`);
+        }
+        const cfClientId = import.meta.env.VITE_CF_ACCESS_CLIENT_ID;
+        const cfClientSecret = import.meta.env.VITE_CF_ACCESS_CLIENT_SECRET;
+        if (cfClientId) {
+          request.headers.set('CF-Access-Client-Id', cfClientId);
+        }
+        if (cfClientSecret) {
+          request.headers.set('CF-Access-Client-Secret', cfClientSecret);
         }
       } catch (e) {
         console.log(e);

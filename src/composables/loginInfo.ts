@@ -107,12 +107,19 @@ export function useLoginInfo(botId: string) {
   }
 
   async function loginCall(auth: AuthPayload): Promise<AuthStorage> {
+    const cfHeaders: Record<string, string> = {};
+    const cfClientId = import.meta.env.VITE_CF_ACCESS_CLIENT_ID;
+    const cfClientSecret = import.meta.env.VITE_CF_ACCESS_CLIENT_SECRET;
+    if (cfClientId) cfHeaders['CF-Access-Client-Id'] = cfClientId;
+    if (cfClientSecret) cfHeaders['CF-Access-Client-Secret'] = cfClientSecret;
+
     const { data } = await axios.post<Record<string, never>, AxiosResponse<AuthResponse>>(
       `${auth.url}/api/v1/token/login`,
       {},
       {
         auth: { ...auth },
         withCredentials: true,
+        headers: cfHeaders,
       },
     );
     if (data.access_token && data.refresh_token) {
