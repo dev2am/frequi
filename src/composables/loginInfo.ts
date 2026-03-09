@@ -150,7 +150,15 @@ export function useLoginInfo(botId: string) {
           `${currentInfo.value.apiUrl}${APIBASE}/token/refresh`,
           {},
           {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: {
+              Authorization: `Bearer ${token}`,
+              ...(import.meta.env.VITE_CF_ACCESS_CLIENT_ID && {
+                'CF-Access-Client-Id': import.meta.env.VITE_CF_ACCESS_CLIENT_ID,
+              }),
+              ...(import.meta.env.VITE_CF_ACCESS_CLIENT_SECRET && {
+                'CF-Access-Client-Secret': import.meta.env.VITE_CF_ACCESS_CLIENT_SECRET,
+              }),
+            },
           },
         )
         .then((response) => {
