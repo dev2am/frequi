@@ -24,3 +24,5 @@ reload:
 log:
 	docker compose -f docker-compose.yml logs -f --tail=$(n) frequi || true
 
+clean:
+	docker compose -f docker-compose.yml down --rmi local
