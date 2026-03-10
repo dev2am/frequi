@@ -141,10 +141,19 @@ export function useLoginInfo(botId: string) {
     currentInfo.value = loginInfo;
   }
 
+  // Holds the in-flight refresh promise to deduplicate concurrent 401s
+  let refreshTokenPromise: Promise<string> | null = null;
+
   function refreshToken(): Promise<string> {
+    // If a refresh is already in progress, return the same promise instead of firing another request
+    if (refreshTokenPromise) {
+      console.log('Token refresh already in progress, reusing existing promise...');
+      return refreshTokenPromise;
+    }
+
     console.log('Refreshing token...');
     const token = currentInfo.value.refreshToken;
-    return new Promise((resolve, reject) => {
+    refreshTokenPromise = new Promise((resolve, reject) => {
       axios
         .post<Record<string, never>, AxiosResponse<AuthResponse>>(
           `${currentInfo.value.apiUrl}${APIBASE}/token/refresh`,
@@ -165,19 +174,28 @@ export function useLoginInfo(botId: string) {
           if (response.data.access_token) {
             currentInfo.value.accessToken = response.data.access_token;
             resolve(response.data.access_token);
+          } else {
+            // Reject explicitly so the promise does not hang indefinitely
+            reject(new Error('No access token received in refresh response'));
           }
         })
         .catch((err) => {
           console.error(err);
           if (err.response && err.response.status === 401) {
-            console.log('Refresh token did not refresh.');
+            console.log('Refresh token expired or invalid.');
             setRefreshTokenExpired();
           } else if (err.response && (err.response.status === 500 || err.response.status === 404)) {
             console.log('Bot seems to be offline... - retrying later');
           }
           reject(err);
+        })
+        .finally(() => {
+          // Always reset so the next call can start a fresh refresh
+          refreshTokenPromise = null;
         });
     });
+
+    return refreshTokenPromise;
   }
 
   return {

@@ -38,37 +38,26 @@ export function useApi(userService: UserServiceType, botId: string) {
   api.interceptors.response.use(
     (response) => response,
     (err) => {
-      // console.log(err);
       if (err.response && err.response.status === 401) {
+        // Attempt to refresh the access token, then retry the original request.
+        // .then() only runs on success; .catch() only runs on failure — no cross-contamination.
         return userService
           .refreshToken()
+          .then((token) => {
+            const { config } = err;
+            config.headers.Authorization = `Bearer ${token}`;
+            // Use global axios to avoid re-triggering this interceptor on the retry
+            return axios.request(config);
+          })
           .catch((error) => {
-            console.log('No new token received');
+            console.log('Token refresh failed, marking bot as offline.');
             console.log(error);
             const botStore = useBotStore();
             if (botStore.botStores[botId]) {
               botStore.botStores[botId].setIsBotOnline(false);
               botStore.botStores[botId].isBotLoggedIn = false;
             }
-          })
-          .then((token) => {
-            // Retry original request with new token
-            const { config } = err;
-            config.headers.Authorization = `Bearer ${token}`;
-
-            return new Promise((resolve, reject) => {
-              axios
-                .request(config)
-                .then((response) => {
-                  resolve(response);
-                })
-                .catch((error) => {
-                  reject(error);
-                });
-            });
-          })
-          .catch((error) => {
-            console.log(error);
+            return Promise.reject(error);
           });
 
         // maybe redirect to /login if needed !
@@ -79,9 +68,7 @@ export function useApi(userService: UserServiceType, botId: string) {
         botStore.botStores[botId]?.setIsBotOnline(false);
       }
 
-      return new Promise((resolve, reject) => {
-        reject(err);
-      });
+      return Promise.reject(err);
     },
   );
 
