@@ -6,6 +6,7 @@ interface ImportMetaEnv extends Readonly<Record<string, string>> {
   readonly DEV: boolean;
   readonly VITE_CF_ACCESS_CLIENT_ID: string;
   readonly VITE_CF_ACCESS_CLIENT_SECRET: string;
+  readonly VITE_WS_TOKEN: string;
 }
 
 interface ImportMeta {

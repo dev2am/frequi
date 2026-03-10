@@ -1188,9 +1188,17 @@ export function createBotSubStore(botId: string, botName: string) {
         ) {
           return;
         }
+        // If VITE_WS_TOKEN is set, use it as a static token (never expires, no reconnect on refresh).
+        // Fallback: use a computed reactive URL so useWebSocket auto-reconnects when JWT is refreshed.
+        const staticWsToken = import.meta.env.VITE_WS_TOKEN;
+        const wsUrl = staticWsToken
+          ? `${loginInfo.baseWsUrl.value}/message/ws?token=${staticWsToken}`
+          : computed(
+              () => `${loginInfo.baseWsUrl.value}/message/ws?token=${loginInfo.accessToken.value}`,
+            );
         const { send, close } = useWebSocket(
           // 'ws://localhost:8080/api/v1/message/ws?token=testtoken',
-          `${loginInfo.baseWsUrl.value}/message/ws?token=${loginInfo.accessToken.value}`,
+          wsUrl,
           {
             autoReconnect: {
               delay: 10000,

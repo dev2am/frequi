@@ -55,12 +55,10 @@ const resetDynamicLayout = (): void => {
   }
 };
 const setTitle = () => {
-  let title = 'freqUI';
+  const botName = botStore.activeBotorUndefined?.botName || 'UI';
+  let title = `CBOT | ${botName}`;
   if (settingsStore.openTradesInTitle === OpenTradeVizOptions.asTitle) {
     title = `(${botStore.activeBotorUndefined?.openTradeCount}) ${title}`;
-  }
-  if (botStore.activeBotorUndefined?.botName) {
-    title = `${title} - ${botStore.activeBotorUndefined?.botName}`;
   }
   document.title = title;
 };
@@ -197,7 +195,7 @@ const drawerVisible = ref(false);
     <div class="flex bg-primary-500 border-b border-primary">
       <RouterLink class="ms-2 flex flex-row items-center pe-2 gap-2" exact to="/">
         <img class="h-[30px] align-middle" src="@/assets/freqtrade-logo.png" alt="Home Logo" />
-        <span class="text-slate-200 text-xl md:hidden lg:inline text-nowrap">Freqtrade UI</span>
+        <span class="text-slate-200 text-xl md:hidden lg:inline text-nowrap">CBOT UI</span>
       </RouterLink>
       <div class="flex justify-between w-full text-center items-center ms-3">
         <div class="items-center hidden md:flex gap-5 ms-5">
