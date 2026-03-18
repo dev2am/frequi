@@ -9,5 +9,10 @@ services:
         VITE_CF_ACCESS_CLIENT_SECRET: ${VITE_CF_ACCESS_CLIENT_SECRET:-}
     image: frequi-local
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+          cpus: '1'
     ports:
       - "3000:80"
