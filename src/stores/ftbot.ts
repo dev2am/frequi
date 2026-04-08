@@ -54,6 +54,8 @@ import type {
   TimeSummaryReturnValue,
   Trade,
   TradeResponse,
+  WalletHistory,
+  WalletHistoryPerBot,
   WhitelistResponse,
 } from '@/types';
 import { BacktestSteps, LoadingStatus, RunModes, TimeSummaryOptions } from '@/types';
@@ -94,12 +96,13 @@ export function createBotSubStore(botId: string, botName: string) {
         mixTagStats: [] as MixTagStats[],
         whitelist: [] as string[],
         blacklist: [] as string[],
-        profitAll: {} as AllProfitStats,
+        profitAll: undefined as AllProfitStats | undefined,
         botState: {} as BotState,
         balance: {} as BalanceInterface,
         dailyStats: {} as TimeSummaryReturnValue,
         weeklyStats: {} as TimeSummaryReturnValue,
         monthlyStats: {} as TimeSummaryReturnValue,
+        balanceHistory: undefined as WalletHistory | undefined,
         pairlistMethods: [] as string[],
         detailTradeId: null as number | null,
         selectedPair: '',
@@ -115,7 +118,7 @@ export function createBotSubStore(botId: string, botName: string) {
         freqaiModelList: [] as string[],
         hyperoptLossList: [] as HyperoptLossObj[],
         exchangeList: [] as Exchange[],
-        strategy: {} as StrategyResult,
+        strategy: {} as StrategyResult | undefined,
         pairlist: [] as string[],
         pairlistWithTimeframe: [] as PairIntervalTuple[],
         currentLocks: undefined as LockResponse | undefined,
@@ -182,7 +185,7 @@ export function createBotSubStore(botId: string, botName: string) {
       botId: () => botId,
       allTrades: (state) => [...state.openTrades, ...state.trades] as Trade[],
       activeLocks: (state) => state.currentLocks?.locks || [],
-      profit: (state): ProfitStats => state.profitAll.all,
+      profit: (state): ProfitStats | undefined => state.profitAll?.all,
     },
     actions: {
       botAdded() {
@@ -242,6 +245,7 @@ export function createBotSubStore(botId: string, botName: string) {
             updates.push(this.getProfit());
             updates.push(this.getTrades());
             updates.push(this.getBalance());
+            updates.push(this.updateWalletChange());
             //     /* white/blacklist might be refreshed more often as they are not expensive on the backend */
             updates.push(this.getWhitelist());
             updates.push(this.getBlacklist());
@@ -405,10 +409,11 @@ export function createBotSubStore(botId: string, botName: string) {
         if (payload.pair && payload.timeframe) {
           this.historyStatus = LoadingStatus.loading;
           this.historyTakesLonger = false;
+          let loadingTimer: ReturnType<typeof setTimeout> | null = null;
           try {
             const settingsStore = useSettingsStore();
             let result: PairHistory | null = null;
-            const loadingTimer = setTimeout(() => (this.historyTakesLonger = true), 10000);
+            loadingTimer = setTimeout(() => (this.historyTakesLonger = true), 10000);
             const timeout = 2 * 60 * 1000; // in MS
             if (this.botFeatures.reducedPairCalls && settingsStore.useReducedPairCalls) {
               // Modern approach, allowing filtering of columns
@@ -425,7 +430,6 @@ export function createBotSubStore(botId: string, botName: string) {
               });
               result = data;
             }
-            clearTimeout(loadingTimer);
             this.history[`${payload.pair}__${payload.timeframe}`] = {
               pair: payload.pair,
               timeframe: payload.timeframe,
@@ -435,11 +439,14 @@ export function createBotSubStore(botId: string, botName: string) {
             this.historyStatus = LoadingStatus.success;
             return;
           } catch (err) {
-            console.error(err);
+            console.error('axios', err);
             this.historyStatus = LoadingStatus.error;
             if (axios.isAxiosError(err)) {
               console.error(err.response);
-              const errMsg = err.response?.data?.detail ?? 'Error fetching history';
+              const isTimeout = err.code === 'ECONNABORTED' || err.message?.includes('timeout');
+              const errMsg = isTimeout
+                ? 'Timeout exceeded'
+                : (err.response?.data?.detail ?? 'Error fetching history');
               showAlert(errMsg, 'error');
             }
 
@@ -447,6 +454,9 @@ export function createBotSubStore(botId: string, botName: string) {
               reject(err);
             });
           } finally {
+            if (loadingTimer) {
+              clearTimeout(loadingTimer);
+            }
             this.historyTakesLonger = false;
           }
         }
@@ -461,7 +471,7 @@ export function createBotSubStore(botId: string, botName: string) {
         try {
           const payload = {};
           if (this.isWebserverMode) {
-            if (!this.strategy.strategy) {
+            if (!this.strategy?.strategy) {
               return Promise.reject({ data: 'No strategy selected' });
             }
             payload['strategy'] = this.strategy.strategy;
@@ -638,6 +648,9 @@ export function createBotSubStore(botId: string, botName: string) {
           }
           // Fallback to old profit endpoint
           const { data } = await api.get<ProfitStats>('/profit');
+          if (!this.profitAll) {
+            this.profitAll = {} as AllProfitStats;
+          }
           this.profitAll['all'] = data;
           return Promise.resolve(data);
         } catch (error) {
@@ -671,6 +684,18 @@ export function createBotSubStore(botId: string, botName: string) {
         } catch (error) {
           console.error(error);
           return Promise.reject(error);
+        }
+      },
+      async updateWalletChange() {
+        if (!this.botFeatures.walletChange) {
+          return;
+        }
+        try {
+          const { data } = await api.get<WalletHistory>('/historic_balance');
+          this.balanceHistory = data;
+          this.balanceHistory['botName'] = this.botName;
+        } catch (err) {
+          console.error(err);
         }
       },
       async getState() {
@@ -1098,6 +1123,26 @@ export function createBotSubStore(botId: string, botName: string) {
             `/backtest/history/${this.selectedBacktestMetadata.filename}/market_change`,
           );
           return data;
+        } catch (err) {
+          console.error(err);
+          return Promise.reject(err);
+        }
+      },
+      async getBacktestWalletChange(): Promise<WalletHistoryPerBot> {
+        if (!this.botFeatures.walletChange) {
+          return Promise.reject('Backtest wallet change not available');
+        }
+        if (!this.selectedBacktestMetadata?.filename) {
+          return Promise.reject('No backtest selected');
+        }
+        try {
+          const { data } = await api.get<WalletHistory>(
+            `/backtest/history/${this.selectedBacktestMetadata.filename}/${this.selectedBacktestMetadata.strategyName}/wallet`,
+          );
+          data['botName'] = `${this.selectedBacktestMetadata.strategyName} (Backtest)`;
+          return {
+            [data['botName']]: data,
+          };
         } catch (err) {
           console.error(err);
           return Promise.reject(err);
