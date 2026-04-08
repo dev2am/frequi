@@ -14,7 +14,8 @@
     "test:e2e": "playwright test",
     "test:e2e-chromium": "playwright test --project=chromium",
     "test:e2e-msedge": "playwright test --project=msedge",
-    "test:e2e-firefox": "playwright test --project=firefox"
+    "test:e2e-firefox": "playwright test --project=firefox",
+    "deploy": "vite build && wrangler pages deploy"
   },
   "dependencies": {
     "@noction/vue-draggable-grid": "1.9.16",
@@ -67,7 +68,8 @@
     "unplugin-vue-components": "^31.0.0",
     "vite": "^7.3.1",
     "vitest": "^4.0.18",
-    "vue-tsc": "^3.2.5"
+    "vue-tsc": "^3.2.5",
+    "wrangler": "^4.79.0"
   },
   "packageManager": "pnpm@10.30.3+sha512.c961d1e0a2d8e354ecaa5166b822516668b7f44cb5bd95122d590dd81922f606f5473b6d23ec4a5be05e7fcd18e8488d47d978bbe981872f1145d06e9a740017"
 }
