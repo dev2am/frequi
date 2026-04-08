@@ -46,6 +46,11 @@ export function useApi(userService: UserServiceType, botId: string) {
           .then((token) => {
             const { config } = err;
             config.headers.Authorization = `Bearer ${token}`;
+            // Re-attach CF headers since global axios bypasses the request interceptor
+            const cfClientId = import.meta.env.VITE_CF_ACCESS_CLIENT_ID;
+            const cfClientSecret = import.meta.env.VITE_CF_ACCESS_CLIENT_SECRET;
+            if (cfClientId) config.headers['CF-Access-Client-Id'] = cfClientId;
+            if (cfClientSecret) config.headers['CF-Access-Client-Secret'] = cfClientSecret;
             // Use global axios to avoid re-triggering this interceptor on the retry
             return axios.request(config);
           })
