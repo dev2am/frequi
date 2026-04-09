@@ -159,6 +159,7 @@ export function useLoginInfo(botId: string) {
           `${currentInfo.value.apiUrl}${APIBASE}/token/refresh`,
           {},
           {
+            withCredentials: true,
             headers: {
               Authorization: `Bearer ${token}`,
               ...(import.meta.env.VITE_CF_ACCESS_CLIENT_ID && {

@@ -224,10 +224,9 @@ export function createBotSubStore(botId: string, botName: string) {
       },
       setIsBotOnline(isBotOnline: boolean) {
         if (!this.isBotOnline && isBotOnline && this.isBotLoggedIn) {
-          // Bot just came online.
-          // Refresh everything
+          // Bot just came online — mark as needing refresh.
+          // allRefreshFull in ftbotwrapper will call allRefreshSlow after all pings complete.
           this.refreshRequired = true;
-          this.refreshSlow(true);
         }
         this.isBotOnline = isBotOnline;
       },
