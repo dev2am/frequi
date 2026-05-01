@@ -30,3 +30,5 @@ yarn-error.log*
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+# Added by code-review-graph
+.code-review-graph/
