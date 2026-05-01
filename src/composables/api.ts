@@ -7,7 +7,6 @@ export function useApi(userService: UserServiceType, botId: string) {
   const api = axios.create({
     baseURL: userService.baseUrl.value,
     timeout: 20000,
-    withCredentials: true,
   });
   // Sent auth headers interceptor
   api.interceptors.request.use(
@@ -27,7 +26,7 @@ export function useApi(userService: UserServiceType, botId: string) {
         if (cfClientSecret) {
           request.headers.set('CF-Access-Client-Secret', cfClientSecret);
         }
-        console.log(`[api][${botId}] ${request.method?.toUpperCase()} ${request.url} | CF-Id: ${cfClientId ? cfClientId.slice(0, 8) + '...' : 'MISSING'} | Auth: ${token ? 'Bearer ***' : 'MISSING'}`);
+        // console.log(`[api][${botId}] ${request.method?.toUpperCase()} ${request.url} | CF-Id: ${cfClientId ? cfClientId.slice(0, 8) + '...' : 'MISSING'} | Auth: ${token ? 'Bearer ***' : 'MISSING'}`);
       } catch (e) {
         console.log(e);
       }

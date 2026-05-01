@@ -39,7 +39,7 @@ export const availableBots = computed<BotDescriptors>(() => {
 });
 
 export function useLoginInfo(botId: string) {
-  console.log('botId', botId);
+  // console.log('botId', botId);
 
   const currentInfo = computed({
     get: () => allLoginInfos.value[botId]!,
@@ -118,7 +118,6 @@ export function useLoginInfo(botId: string) {
       {},
       {
         auth: { ...auth },
-        withCredentials: true,
         headers: cfHeaders,
       },
     );
@@ -147,11 +146,11 @@ export function useLoginInfo(botId: string) {
   function refreshToken(): Promise<string> {
     // If a refresh is already in progress, return the same promise instead of firing another request
     if (refreshTokenPromise) {
-      console.log('Token refresh already in progress, reusing existing promise...');
+      // console.log('Token refresh already in progress, reusing existing promise...');
       return refreshTokenPromise;
     }
 
-    console.log('Refreshing token...');
+    // console.log('Refreshing token...');
     const token = currentInfo.value.refreshToken;
     refreshTokenPromise = new Promise((resolve, reject) => {
       axios
@@ -159,7 +158,6 @@ export function useLoginInfo(botId: string) {
           `${currentInfo.value.apiUrl}${APIBASE}/token/refresh`,
           {},
           {
-            withCredentials: true,
             headers: {
               Authorization: `Bearer ${token}`,
               ...(import.meta.env.VITE_CF_ACCESS_CLIENT_ID && {

@@ -98,6 +98,14 @@ defineProps<{
         }}
       </ValuePair>
       <ValuePair
+        v-if="trade.stoploss_entry_dist !== undefined && trade.stoploss_entry_dist_ratio !== undefined"
+        description="P&L if SL hit"
+        help="Estimated profit or loss if the stoploss is triggered from entry price."
+      >
+        {{ formatPercent(trade.stoploss_entry_dist_ratio) }} |
+        {{ formatPriceCurrency(trade.stoploss_entry_dist, stakeCurrency) }}
+      </ValuePair>
+      <ValuePair
         v-if="trade.is_open && trade.stoploss_current_dist_ratio && trade.stoploss_current_dist"
         description="Current stoploss dist"
       >
